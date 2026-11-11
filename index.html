@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Happy Dice Roller!</title>
+  <style>
+    :root {
+      --bg-top: #fef08a;
+      --bg-bottom: #bae6fd;
+      --primary: #ff5757;
+      --primary-shadow: #c92a2a;
+      --secondary: #4dabf7;
+      --card-bg: rgba(255, 255, 255, 0.88);
+      --text: #1e293b;
+      --die-size: 120px;
+      --half-size: 60px;
+    }
+
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: 'Comic Sans MS', 'Chalkboard SE', 'Fredoka', system-ui, -apple-system, sans-serif;
+      background: linear-gradient(160deg, var(--bg-top) 0%, #fbcfe8 50%, var(--bg-bottom) 100%);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px;
+      overflow-x: hidden;
+    }
+
+    /* Top Bar */
+    .header {
+      width: 100%;
+      max-width: 680px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      background: var(--card-bg);
+      padding: 10px 16px;
+      border-radius: 24px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+      border: 3px solid #fff;
+    }
+
+    .title {
+      font-size: 1.5rem;
+      font-weight: 900;
+      color: #ec4899;
+      text-shadow: 2px 2px 0px #fce7f3;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .controls-top {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .icon-btn {
+      background: #fff;
+      border: 3px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 8px 12px;
+      font-size: 1.2rem;
+      cursor: pointer;
+      box-shadow: 0 4px 0 #cbd5e1;
+      transition: transform 0.1s, box-shadow 0.1s, border-color 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-family: inherit;
+      font-weight: 700;
+      color: #475569;
+    }
+
+    .icon-btn:active {
+      transform: translateY(3px);
+      box-shadow: 0 1px 0 #cbd5e1;
+    }
+
+    .icon-btn.active {
+      border-color: #38bdf8;
+      background: #e0f2fe;
+      color: #0284c7;
+      box-shadow: 0 4px 0 #7dd3fc;
+    }
+
+    /* Mode & Count Selector */
+    .selector-bar {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 12px;
+      margin-top: 12px;
+      width: 100%;
+      max-width: 680px;
+    }
+
+    .pill-group {
+      display: flex;
+      background: var(--card-bg);
+      padding: 6px;
+      border-radius: 20px;
+      box-shadow: 0 6px 14px rgba(0, 0, 0, 0.06);
+      border: 3px solid #fff;
+      gap: 6px;
+    }
+
+    .pill-btn {
+      border: none;
+      background: transparent;
+      padding: 8px 16px;
+      border-radius: 14px;
+      font-family: inherit;
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: #64748b;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .pill-btn.selected {
+      background: #8b5cf6;
+      color: #fff;
+      box-shadow: 0 3px 0 #6d28d9;
+      transform: translateY(-1px);
+    }
+
+    /* Stage */
+    .stage {
+      flex: 1;
+      width: 100%;
+      max-width: 680px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      position: relative;
+      my: 12px;
+    }
+
+    .dice-tray {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 36px;
+      padding: 36px 24px;
+      min-height: 220px;
+      perspective: 900px;
+    }
+
+    /* 3D Cube */
+    .scene {
+      width: var(--die-size);
+      height: var(--die-size);
+      perspective: 600px;
+    }
+
+    .cube {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 0.9s cubic-bezier(0.22, 1.25, 0.36, 1);
+    }
+
+    .cube.rolling {
+      transition: transform 0.75s cubic-bezier(0.15, 0.85, 0.35, 1.15);
+    }
+
+    .cube-face {
+      position: absolute;
+      width: var(--die-size);
+      height: var(--die-size);
+      border-radius: 24px;
+      background: var(--die-bg, #ffffff);
+      border: 4px solid var(--die-border, #f1f5f9);
+      box-shadow: inset 0 0 16px rgba(0, 0, 0, 0.08), 0 4px 10px rgba(0, 0, 0, 0.12);
+      display: grid;
+      grid-template-areas:
+        "a . c"
+        "e g f"
+        "d . b";
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(3, 1fr);
+      padding: 16px;
+      backface-visibility: hidden;
+    }
+
+    /* Face positions */
+    .face-1 { transform: rotateY(  0deg) translateZ(var(--half-size)); }
+    .face-6 { transform: rotateY(180deg) translateZ(var(--half-size)); }
+    .face-2 { transform: rotateY(-90deg) translateZ(var(--half-size)); }
+    .face-5 { transform: rotateY( 90deg) translateZ(var(--half-size)); }
+    .face-3 { transform: rotateX( 90deg) translateZ(var(--half-size)); }
+    .face-4 { transform: rotateX(-90deg) translateZ(var(--half-size)); }
+
+    /* Pips (Dots) */
+    .pip {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: var(--pip-color, #1e293b);
+      align-self: center;
+      justify-self: center;
+      box-shadow: inset 0 3px 4px rgba(0, 0, 0, 0.25);
+    }
+
+    /* Big red pip for 1 */
+    .face-1 .pip {
+      width: 34px;
+      height: 34px;
+      background: var(--pip-one, #ef4444);
+    }
+
+    .pip-a { grid-area: a; }
+    .pip-b { grid-area: b; }
+    .pip-c { grid-area: c; }
+    .pip-d { grid-area: d; }
+    .pip-e { grid-area: e; }
+    .pip-f { grid-area: f; }
+    .pip-g { grid-area: g; }
+
+    /* Result Banner */
+    .result-card {
+      background: var(--card-bg);
+      border: 4px solid #fff;
+      border-radius: 28px;
+      padding: 14px 28px;
+      text-align: center;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+      min-width: 250px;
+      transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .result-card.pop {
+      transform: scale(1.1);
+    }
+
+    .sum-equation {
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: #64748b;
+      margin-bottom: 2px;
+      min-height: 1.6rem;
+    }
+
+    .total-number {
+      font-size: 3.2rem;
+      font-weight: 900;
+      line-height: 1.05;
+      color: #7c3aed;
+      text-shadow: 2px 3px 0px #ede9fe;
+    }
+
+    .badge-msg {
+      display: inline-block;
+      margin-top: 6px;
+      padding: 4px 12px;
+      border-radius: 999px;
+      background: #fef08a;
+      color: #b45309;
+      font-weight: 800;
+      font-size: 0.95rem;
+    }
+
+    /* Big Roll Button */
+    .bottom-bar {
+      width: 100%;
+      max-width: 680px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 6px;
+    }
+
+    .roll-btn {
+      width: 100%;
+      max-width: 340px;
+      background: linear-gradient(180deg, #ff6b6b 0%, #ee5253 100%);
+      color: #fff;
+      border: 4px solid #fff;
+      border-radius: 999px;
+      padding: 16px 32px;
+      font-size: 1.9rem;
+      font-weight: 900;
+      font-family: inherit;
+      letter-spacing: 1px;
+      cursor: pointer;
+      box-shadow: 0 10px 0 var(--primary-shadow), 0 14px 25px rgba(238, 82, 83, 0.4);
+      transition: transform 0.1s, box-shadow 0.1s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+    }
+
+    .roll-btn:active, .roll-btn.pressed {
+      transform: translateY(7px);
+      box-shadow: 0 3px 0 var(--primary-shadow), 0 6px 12px rgba(238, 82, 83, 0.35);
+    }
+
+    /* History Strip */
+    .history-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 40px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .history-chip {
+      background: rgba(255, 255, 255, 0.85);
+      border: 2px solid #fff;
+      border-radius: 12px;
+      padding: 4px 10px;
+      font-weight: 800;
+      font-size: 0.95rem;
+      color: #475569;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+      animation: popIn 0.25s ease-out;
+    }
+
+    @keyframes popIn {
+      0% { transform: scale(0.5); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    /* Confetti Canvas */
+    #confetti-canvas {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 50;
+    }
+
+    @media (max-width: 480px) {
+      :root {
+        --die-size: 96px;
+        --half-size: 48px;
+      }
+      .cube-face {
+        padding: 12px;
+        border-radius: 20px;
+      }
+      .pip {
+        width: 17px;
+        height: 17px;
+      }
+      .face-1 .pip {
+        width: 26px;
+        height: 26px;
+      }
+      .dice-tray {
+        gap: 24px;
+        padding: 20px 10px;
+      }
+      .title {
+        font-size: 1.25rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="confetti-canvas"></canvas>
+
+  <!-- Top Header -->
+  <header class="header">
+    <h1 class="title">🎲 Happy Dice</h1>
+    <div class="controls-top">
+      <button id="sound-btn" class="icon-btn active" title="Toggle Sound Effects">
+        🔊 <span>SFX</span>
+      </button>
+      <button id="voice-btn" class="icon-btn active" title="Read Numbers Out Loud">
+        🗣️ <span>Voice</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Dice Count & Color Theme Bar -->
+  <div class="selector-bar">
+    <div class="pill-group" role="group" aria-label="Number of dice">
+      <button class="pill-btn selected" data-count="1">1 Die</button>
+      <button class="pill-btn" data-count="2">2 Dice</button>
+      <button class="pill-btn" data-count="3">3 Dice</button>
+    </div>
+
+    <div class="pill-group" role="group" aria-label="Dice Color Theme">
+      <button class="pill-btn selected" data-theme="classic">⚪ Classic</button>
+      <button class="pill-btn" data-theme="candy">🍬 Candy</button>
+      <button class="pill-btn" data-theme="rainbow">🌈 Rainbow</button>
+    </div>
+  </div>
+
+  <!-- Interactive Stage -->
+  <main class="stage" id="stage" title="Tap anywhere to roll!">
+    <div class="dice-tray" id="dice-tray"></div>
+
+    <div class="result-card" id="result-card">
+      <div class="sum-equation" id="sum-equation">Tap ROLL or press Space!</div>
+      <div class="total-number" id="total-number">6</div>
+      <div class="badge-msg" id="badge-msg">✨ Ready to play!</div>
+    </div>
+  </main>
+
+  <!-- Bottom Action & Roll History -->
+  <footer class="bottom-bar">
+    <button class="roll-btn" id="roll-btn">
+      <span>🎲</span> ROLL!
+    </button>
+    <div class="history-bar" id="history-bar"></div>
+  </footer>
+
+  <script>
+    // Pip layout map for faces 1-6
+    const FACE_PIPS = {
+      1: ['g'],
+      2: ['a', 'b'],
+      3: ['a', 'g', 'b'],
+      4: ['a', 'c', 'd', 'b'],
+      5: ['a', 'c', 'g', 'd', 'b'],
+      6: ['a', 'c', 'e', 'f', 'd', 'b']
+    };
+
+    // Base rotations that bring each face (1..6) to the front
+    const FACE_ROTATIONS = {
+      1: { x: 0,   y: 0   },
+      6: { x: 0,   y: 180 },
+      2: { x: 0,   y: 90  },
+      5: { x: 0,   y: -90 },
+      3: { x: -90, y: 0   },
+      4: { x: 90,  y: 0   }
+    };
+
+    const THEMES = {
+      classic: [
+        { bg: '#ffffff', border: '#e2e8f0', pip: '#1e293b', one: '#ef4444' },
+        { bg: '#ffffff', border: '#e2e8f0', pip: '#1e293b', one: '#ef4444' },
+        { bg: '#ffffff', border: '#e2e8f0', pip: '#1e293b', one: '#ef4444' }
+      ],
+      candy: [
+        { bg: '#fbcfe8', border: '#f472b6', pip: '#831843', one: '#db2777' },
+        { bg: '#bae6fd', border: '#38bdf8', pip: '#0c4a6e', one: '#0284c7' },
+        { bg: '#fde68a', border: '#fbbf24', pip: '#78350f', one: '#d97706' }
+      ],
+      rainbow: [
+        { bg: '#ffedd5', border: '#fb923c', pip: '#9a3412', one: '#ea580c' },
+        { bg: '#dcfce7', border: '#4ade80', pip: '#14532d', one: '#16a34a' },
+        { bg: '#ede9fe', border: '#a78bfa', pip: '#4c1d95', one: '#7c3aed' }
+      ]
+    };
+
+    let diceCount = 1;
+    let currentTheme = 'classic';
+    let sfxEnabled = true;
+    let voiceEnabled = true;
+    let isRolling = false;
+    let diceState = []; // { el, xSpin, ySpin, value }
+    let history = [];
+
+    const trayEl = document.getElementById('dice-tray');
+    const sumEqEl = document.getElementById('sum-equation');
+    const totalNumEl = document.getElementById('total-number');
+    const badgeMsgEl = document.getElementById('badge-msg');
+    const resultCardEl = document.getElementById('result-card');
+    const rollBtn = document.getElementById('roll-btn');
+    const historyBar = document.getElementById('history-bar');
+
+    // Web Audio Synthesizer (zero external audio files needed)
+    let audioCtx = null;
+    function getAudioCtx() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      return audioCtx;
+    }
+
+    function playClack(delay = 0, pitch = 300) {
+      if (!sfxEnabled) return;
+      try {
+        const ctx = getAudioCtx();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(pitch, ctx.currentTime + delay);
+        osc.frequency.exponentialRampToValueAtTime(90, ctx.currentTime + delay + 0.055);
+
+        gain.gain.setValueAtTime(0.22, ctx.currentTime + delay);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + 0.055);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(ctx.currentTime + delay);
+        osc.stop(ctx.currentTime + delay + 0.06);
+      } catch (e) {}
+    }
+
+    function playSuccessChime(isSpecial = false) {
+      if (!sfxEnabled) return;
+      try {
+        const ctx = getAudioCtx();
+        const notes = isSpecial ? [523.25, 659.25, 783.99, 1046.5] : [523.25, 659.25, 783.99];
+        notes.forEach((freq, idx) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          const start = ctx.currentTime + idx * 0.08;
+          osc.frequency.setValueAtTime(freq, start);
+          gain.gain.setValueAtTime(0.18, start);
+          gain.gain.exponentialRampToValueAtTime(0.001, start + 0.28);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(start);
+          osc.stop(start + 0.3);
+        });
+      } catch (e) {}
+    }
+
+    function speakResult(values, total) {
+      if (!voiceEnabled || !('speechSynthesis' in window)) return;
+      try {
+        window.speechSynthesis.cancel();
+        let text = '';
+        if (values.length === 1) {
+          text = String(total);
+        } else {
+          text = `${values.join(' plus ')} equals ${total}`;
+        }
+        const utter = new SpeechSynthesisUtterance(text);
+        utter.lang = 'en-US';
+        utter.rate = 1.02;
+        utter.pitch = 1.15;
+        window.speechSynthesis.speak(utter);
+      } catch (e) {}
+    }
+
+    function createDieElement(index) {
+      const scene = document.createElement('div');
+      scene.className = 'scene';
+
+      const cube = document.createElement('div');
+      cube.className = 'cube';
+
+      for (let face = 1; face <= 6; face++) {
+        const faceEl = document.createElement('div');
+        faceEl.className = `cube-face face-${face}`;
+        FACE_PIPS[face].forEach(area => {
+          const pip = document.createElement('span');
+          pip.className = `pip pip-${area}`;
+          faceEl.appendChild(pip);
+        });
+        cube.appendChild(faceEl);
+      }
+
+      scene.appendChild(cube);
+      applyDieTheme(cube, index);
+      return { scene, cube };
+    }
+
+    function applyDieTheme(cubeEl, index) {
+      const palette = THEMES[currentTheme][index % 3];
+      cubeEl.style.setProperty('--die-bg', palette.bg);
+      cubeEl.style.setProperty('--die-border', palette.border);
+      cubeEl.style.setProperty('--pip-color', palette.pip);
+      cubeEl.style.setProperty('--pip-one', palette.one);
+    }
+
+    function buildDiceTray() {
+      trayEl.innerHTML = '';
+      diceState = [];
+      for (let i = 0; i < diceCount; i++) {
+        const { scene, cube } = createDieElement(i);
+        trayEl.appendChild(scene);
+        const initialVal = 6;
+        diceState.push({
+          cube,
+          xSpin: 0,
+          ySpin: 0,
+          value: initialVal
+        });
+        setCubeRotation(diceState[i], initialVal, false);
+      }
+      updateScoreDisplay(diceState.map(d => d.value), false);
+    }
+
+    function setCubeRotation(dieObj, faceVal, animate = true) {
+      const target = FACE_ROTATIONS[faceVal];
+      if (animate) {
+        dieObj.xSpin += (2 + Math.floor(Math.random() * 2)) * 360;
+        dieObj.ySpin += (2 + Math.floor(Math.random() * 2)) * 360;
+      }
+      const rx = dieObj.xSpin + target.x;
+      const ry = dieObj.ySpin + target.y;
+      dieObj.cube.style.transform = `rotateX(${rx}deg) rotateY(${ry}deg)`;
+    }
+
+    function rollDice() {
+      if (isRolling) return;
+      isRolling = true;
+      rollBtn.classList.add('pressed');
+      setTimeout(() => rollBtn.classList.remove('pressed'), 180);
+
+      // Play tumbling clack sounds
+      for (let i = 0; i < 6; i++) {
+        playClack(i * 0.09, 260 + Math.random() * 220);
+      }
+
+      const newValues = [];
+      diceState.forEach((die) => {
+        die.cube.classList.add('rolling');
+        const val = 1 + Math.floor(Math.random() * 6);
+        die.value = val;
+        newValues.push(val);
+        setCubeRotation(die, val, true);
+      });
+
+      setTimeout(() => {
+        diceState.forEach(d => d.cube.classList.remove('rolling'));
+        updateScoreDisplay(newValues, true);
+        isRolling = false;
+      }, 760);
+    }
+
+    function updateScoreDisplay(values, fromRoll) {
+      const total = values.reduce((a, b) => a + b, 0);
+      totalNumEl.textContent = total;
+
+      if (values.length === 1) {
+        const dots = '●'.repeat(total);
+        sumEqEl.textContent = dots;
+      } else {
+        sumEqEl.textContent = `${values.join(' + ')} = ${total}`;
+      }
+
+      // Fun kid encouragement messages
+      const maxPossible = values.length * 6;
+      const allSame = values.length > 1 && values.every(v => v === values[0]);
+      let badge = '🎲 Nice roll!';
+      let special = false;
+
+      if (!fromRoll) {
+        badge = '✨ Tap ROLL or Spacebar!';
+      } else if (total === maxPossible) {
+        badge = '🌟 SUPER MAX ROLL! 🌟';
+        special = true;
+      } else if (allSame) {
+        badge = values.length === 2 ? '🎉 DOUBLES! 🎉' : '👑 TRIPLES! 👑';
+        special = true;
+      } else if (total >= maxPossible - 2) {
+        badge = '🚀 Awesome High Roll!';
+      } else if (total === values.length) {
+        badge = '🐍 Snake Eyes / Mini Roll!';
+      }
+
+      badgeMsgEl.textContent = badge;
+
+      if (fromRoll) {
+        resultCardEl.classList.remove('pop');
+        void resultCardEl.offsetWidth;
+        resultCardEl.classList.add('pop');
+        setTimeout(() => resultCardEl.classList.remove('pop'), 250);
+
+        playSuccessChime(special);
+        speakResult(values, total);
+        if (special) launchConfetti();
+
+        // Update roll history
+        const label = values.length === 1 ? `🎲 ${total}` : `🎲 ${values.join('+')} = ${total}`;
+        history.unshift(label);
+        if (history.length > 6) history.pop();
+        renderHistory();
+      }
+    }
+
+    function renderHistory() {
+      historyBar.innerHTML = '';
+      history.forEach(item => {
+        const chip = document.createElement('div');
+        chip.className = 'history-chip';
+        chip.textContent = item;
+        historyBar.appendChild(chip);
+      });
+    }
+
+    // Simple lightweight Confetti burst
+    const canvas = document.getElementById('confetti-canvas');
+    const ctx = canvas.getContext('2d');
+    let particles = [];
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    function launchConfetti() {
+      const colors = ['#ff5757', '#fbbf24', '#34d399', '#60a5fa', '#a78bfa', '#f472b6'];
+      for (let i = 0; i < 55; i++) {
+        particles.push({
+          x: window.innerWidth / 2,
+          y: window.innerHeight / 2,
+          vx: (Math.random() - 0.5) * 16,
+          vy: (Math.random() - 0.85) * 16,
+          size: 8 + Math.random() * 8,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          rot: Math.random() * Math.PI,
+          vrot: (Math.random() - 0.5) * 0.2,
+          life: 1
+        });
+      }
+      requestAnimationFrame(stepConfetti);
+    }
+
+    function stepConfetti() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      particles.forEach(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.42; // gravity
+        p.rot += p.vrot;
+        p.life -= 0.015;
+
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rot);
+        ctx.fillStyle = p.color;
+        ctx.globalAlpha = Math.max(0, p.life);
+        ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.65);
+        ctx.restore();
+      });
+      particles = particles.filter(p => p.life > 0);
+      if (particles.length > 0) {
+        requestAnimationFrame(stepConfetti);
+      }
+    }
+
+    // Event Listeners
+    rollBtn.addEventListener('click', rollDice);
+    document.getElementById('stage').addEventListener('click', rollDice);
+
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'Space' || e.code === 'Enter') {
+        e.preventDefault();
+        rollDice();
+      }
+    });
+
+    document.querySelectorAll('[data-count]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('[data-count]').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        diceCount = parseInt(btn.dataset.count, 10);
+        buildDiceTray();
+      });
+    });
+
+    document.querySelectorAll('[data-theme]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('[data-theme]').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        currentTheme = btn.dataset.theme;
+        diceState.forEach((d, idx) => applyDieTheme(d.cube, idx));
+      });
+    });
+
+    const soundBtn = document.getElementById('sound-btn');
+    soundBtn.addEventListener('click', () => {
+      sfxEnabled = !sfxEnabled;
+      soundBtn.classList.toggle('active', sfxEnabled);
+      soundBtn.innerHTML = sfxEnabled ? '🔊 <span>SFX</span>' : '🔇 <span>SFX</span>';
+    });
+
+    const voiceBtn = document.getElementById('voice-btn');
+    voiceBtn.addEventListener('click', () => {
+      voiceEnabled = !voiceEnabled;
+      voiceBtn.classList.toggle('active', voiceEnabled);
+      voiceBtn.innerHTML = voiceEnabled ? '🗣️ <span>Voice</span>' : '🙊 <span>Voice</span>';
+    });
+
+    // Initialize
+    buildDiceTray();
+  </script>
+</body>
+</html>
