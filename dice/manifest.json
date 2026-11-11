@@ -1,0 +1,24 @@
+{
+  "name": "欢乐骰子 · Happy Dice",
+  "short_name": "欢乐骰子",
+  "description": "专为小朋友设计的 3D 互动骰子与数学加法小游戏",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#fef3c7",
+  "theme_color": "#8b5cf6",
+  "icons": [
+    {
+      "src": "./apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    },
+    {
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
