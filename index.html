@@ -352,6 +352,64 @@
       z-index: 50;
     }
 
+    /* QR Modal */
+    .qr-modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.55);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 16px;
+    }
+    .qr-modal-backdrop.open {
+      display: flex;
+    }
+    .qr-modal {
+      background: #fff;
+      border-radius: 28px;
+      padding: 24px;
+      text-align: center;
+      max-width: 320px;
+      width: 100%;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+      border: 4px solid #f472b6;
+      animation: popIn 0.2s ease-out;
+    }
+    .qr-modal h2 {
+      margin: 0 0 8px;
+      color: #ec4899;
+      font-size: 1.4rem;
+    }
+    .qr-modal p {
+      margin: 0 0 14px;
+      color: #64748b;
+      font-size: 0.95rem;
+      font-weight: 700;
+    }
+    .qr-modal img {
+      width: 220px;
+      height: 220px;
+      border-radius: 16px;
+      border: 3px solid #f1f5f9;
+      display: block;
+      margin: 0 auto 16px;
+    }
+    .qr-close-btn {
+      background: #8b5cf6;
+      color: #fff;
+      border: none;
+      border-radius: 14px;
+      padding: 10px 24px;
+      font-family: inherit;
+      font-size: 1.05rem;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 4px 0 #6d28d9;
+    }
+
     @media (max-width: 480px) {
       :root {
         --die-size: 96px;
@@ -392,8 +450,21 @@
       <button id="voice-btn" class="icon-btn active" title="Read Numbers Out Loud">
         🗣️ <span>Voice</span>
       </button>
+      <button id="qr-btn" class="icon-btn" title="Show QR Code to Share">
+        📱 <span>QR</span>
+      </button>
     </div>
   </header>
+
+  <!-- QR Code Modal -->
+  <div class="qr-modal-backdrop" id="qr-modal">
+    <div class="qr-modal" onclick="event.stopPropagation()">
+      <h2>📱 Play on Phone / iPad</h2>
+      <p>Scan to open Happy Dice!</p>
+      <img src="qr_code.png" alt="QR Code for Happy Dice" />
+      <button class="qr-close-btn" id="qr-close-btn">Close</button>
+    </div>
+  </div>
 
   <!-- Dice Count & Color Theme Bar -->
   <div class="selector-bar">
@@ -797,6 +868,17 @@
       voiceEnabled = !voiceEnabled;
       voiceBtn.classList.toggle('active', voiceEnabled);
       voiceBtn.innerHTML = voiceEnabled ? '🗣️ <span>Voice</span>' : '🙊 <span>Voice</span>';
+    });
+
+    const qrModal = document.getElementById('qr-modal');
+    document.getElementById('qr-btn').addEventListener('click', () => {
+      qrModal.classList.add('open');
+    });
+    document.getElementById('qr-close-btn').addEventListener('click', () => {
+      qrModal.classList.remove('open');
+    });
+    qrModal.addEventListener('click', () => {
+      qrModal.classList.remove('open');
     });
 
     // Initialize
